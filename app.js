@@ -34,7 +34,15 @@ function updateSummary(){
   else setStatus('generateStatus','Add item and choose photo.','muted');
 }
 function addItem(data){ state.items.push({...blankItem(), ...(data||{})}); state.selected=state.items.length-1; renderItems(); previewSelected(); }
-function updateItem(id,key,value){ const it=state.items.find(x=>x.id===id); if(!it)return; it[key]=value; renderItems(false); previewSelected(); }
+function updateItem(id,key,value){
+  const it=state.items.find(x=>x.id===id);
+  if(!it)return;
+  it[key]=value;
+  const idx=state.items.indexOf(it);
+  if(idx>=0) state.selected=idx;
+  updateSummary();
+  previewSelected();
+}
 function selectItem(idx){ state.selected=idx; renderItems(false); previewSelected(); }
 function deleteItem(idx){ const it=state.items[idx]; if(it?.photoUrl) URL.revokeObjectURL(it.photoUrl); state.items.splice(idx,1); state.selected=Math.max(0,Math.min(state.selected,state.items.length-1)); renderItems(); previewSelected(); }
 function duplicateSelected(){ const src=state.items[state.selected]; if(!src)return; const copy={...src,id:uid(),item_name:src.item_name+' Copy'}; state.items.splice(state.selected+1,0,copy); state.selected++; renderItems(); previewSelected(); }
