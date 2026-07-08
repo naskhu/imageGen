@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk Product Photo Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root { --bg:#f4f6fb; --card:#fff; --text:#111827; --muted:#6b7280; --primary:#2563eb; --border:#e5e7eb; }
+    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    header{padding:22px 16px;background:linear-gradient(135deg,#111827,#2563eb);color:#fff;text-align:center} header h1{margin:0 0 6px;font-size:24px} header p{margin:0;opacity:.9;font-size:14px}
+    main{max-width:1120px;margin:0 auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 28px rgba(17,24,39,.06)} h2{font-size:17px;margin:0 0 12px}.hint{color:var(--muted);font-size:13px;line-height:1.45}.status{margin-top:10px;font-size:13px;color:var(--muted)}
+    input,select,textarea{width:100%;padding:10px 12px;margin:6px 0 10px;border:1px solid var(--border);border-radius:10px;background:#fff} label{display:block;font-weight:650;font-size:13px;margin-top:8px}
+    button{border:0;background:var(--primary);color:#fff;padding:11px 14px;border-radius:12px;font-weight:750;cursor:pointer;margin:4px 6px 4px 0}.secondary{background:#111827}.light{background:#eef2ff;color:#1d4ed8}
+    .preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}.thumb{background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px}.thumb img{width:100%;display:block;border-radius:10px}.thumb small{display:block;color:var(--muted);margin-top:6px;word-break:break-word}
+    .template-row{display:grid;grid-template-columns:1fr 90px 90px 90px;gap:8px}.template-row input{padding:8px} table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left;vertical-align:top} th{color:var(--muted)} code{background:#f3f4f6;padding:2px 5px;border-radius:6px}
+    @media(max-width:780px){.grid{grid-template-columns:1fr}.template-row{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<header><h1>Bulk Product Photo Generator</h1><p>Generate one product poster per item with its own price, info, category theme and photo</p></header>
+<main class="grid">
+  <section class="card">
+    <h2>1. Upload Item List</h2>
+    <input id="csvFile" type="file" accept=".csv,text/csv" />
+    <p class="hint">Required columns: <code>item_name</code>, <code>price</code>, <code>category</code>, <code>photo_filename</code>.<br>Optional per-item columns: <code>description</code>, <code>unit</code>, <code>old_price</code>, <code>offer</code>, <code>item_code</code>, <code>phone</code>, <code>brand</code>.</p>
+    <button class="light" onclick="loadSample()">Load Sample List</button>
+    <div id="csvStatus" class="status">No list loaded.</div>
+  </section>
+  <section class="card">
+    <h2>2. Upload Photos and Logo</h2>
+    <label>Product Photos</label><input id="photoFiles" type="file" accept="image/*" multiple />
+    <label>Logo</label><input id="logoFile" type="file" accept="image/*" />
+    <div id="photoStatus" class="status">No photos loaded.</div>
+  </section>
+  <section class="card full">
+    <h2>3. Template Colors by Category</h2>
+    <p class="hint">Category name must match your CSV category. Each item still uses its own name, price and details.</p>
+    <div id="templateEditor"></div><button class="secondary" onclick="addTemplate()">Add Category Template</button>
+  </section>
+  <section class="card full">
+    <h2>4. Items Preview</h2><div style="overflow:auto"><table><thead><tr><th>Item</th><th>Price</th><th>Info</th><th>Category</th><th>Photo</th></tr></thead><tbody id="itemsTable"><tr><td colspan="5">No items loaded.</td></tr></tbody></table></div>
+  </section>
+  <section class="card full">
+    <h2>5. Generate</h2>
+    <label>Currency / Price Prefix</label><input id="currency" value="MVR" />
+    <label>Output Size</label><select id="size"><option value="1080">1080 x 1080</option><option value="1200">1200 x 1200</option><option value="800">800 x 800</option></select>
+    <button onclick="generatePreview()">Generate Preview</button><button class="secondary" onclick="downloadZip()">Download All as ZIP</button>
+    <div id="genStatus" class="status">Ready.</div>
+  </section>
+  <section class="card full"><h2>Generated Preview</h2><div id="preview" class="preview-grid"></div></section>
+</main>
+<script>
+let items=[], photos=new Map(), logoImg=null, generated=[];
+let templates={electronics:{bg:'#0f172a',price:'#2563eb',text:'#ffffff',accent:'#93c5fd'},food:{bg:'#fef3c7',price:'#16a34a',text:'#111827',accent:'#166534'},hardware:{bg:'#e5e7eb',price:'#dc2626',text:'#111827',accent:'#374151'},default:{bg:'#ffffff',price:'#111827',text:'#111827',accent:'#6b7280'}};
+const $=id=>document.getElementById(id);
+function parseCSV(text){const lines=text.trim().split(/\r?\n/).filter(Boolean); if(!lines.length)return[]; const headers=splitCSVLine(lines.shift()).map(h=>h.trim().toLowerCase()); return lines.map(line=>{const values=splitCSVLine(line); const row={}; headers.forEach((h,i)=>row[h]=(values[i]||'').trim()); return row;}).filter(r=>r.item_name&&r.price&&r.category&&r.photo_filename);}
+function splitCSVLine(line){const out=[];let cur='',quote=false;for(let i=0;i<line.length;i++){const ch=line[i], next=line[i+1]; if(ch==='"'&&quote&&next==='"'){cur+='"';i++;} else if(ch==='"') quote=!quote; else if(ch===','&&!quote){out.push(cur);cur='';} else cur+=ch;} out.push(cur); return out;}
+function loadSample(){items=[
+ {item_name:'iPhone Charger',price:'120',old_price:'150',unit:'1 pc',offer:'SPECIAL OFFER',description:'20W fast charger with Type-C cable',brand:'TechPlus',item_code:'EL-001',phone:'9485333',category:'electronics',photo_filename:'charger.jpg'},
+ {item_name:'Fresh Tuna Pack',price:'80',unit:'500g',offer:'FRESH TODAY',description:'Cleaned and packed local Maldives tuna',brand:'Local Catch',item_code:'FD-014',phone:'9485333',category:'food',photo_filename:'tuna.jpg'},
+ {item_name:'Paint Bucket',price:'350',unit:'4L',offer:'NEW STOCK',description:'Interior wall paint, washable finish',brand:'HomePro',item_code:'HW-100',phone:'9485333',category:'hardware',photo_filename:'paint.jpg'}]; updateItemsUI(); $('csvStatus').textContent=`${items.length} sample items loaded with individual info and prices.`;}
+$('csvFile').addEventListener('change',async e=>{const file=e.target.files[0]; if(!file)return; items=parseCSV(await file.text()); $('csvStatus').textContent=`${items.length} items loaded.`; updateItemsUI();});
+$('photoFiles').addEventListener('change',async e=>{photos.clear(); for(const file of e.target.files){photos.set(file.name,await loadImage(file));} $('photoStatus').textContent=`${photos.size} product photos loaded.`;});
+$('logoFile').addEventListener('change',async e=>{const file=e.target.files[0]; if(!file)return; logoImg=await loadImage(file); $('photoStatus').textContent+=' Logo loaded.';});
+function loadImage(fileOrBlob){return new Promise((resolve,reject)=>{const img=new Image(); img.onload=()=>resolve(img); img.onerror=reject; img.src=URL.createObjectURL(fileOrBlob);});}
+function updateItemsUI(){const tbody=$('itemsTable'); if(!items.length){tbody.innerHTML='<tr><td colspan="5">No items loaded.</td></tr>'; return;} tbody.innerHTML=items.map(i=>`<tr><td><b>${escapeHTML(i.item_name)}</b><br><small>${escapeHTML(i.brand||'')}</small></td><td>${priceLine(i)}</td><td>${infoLine(i)}</td><td>${escapeHTML(i.category)}</td><td>${escapeHTML(i.photo_filename)}</td></tr>`).join('');}
+function priceLine(i){return `${escapeHTML(i.price)}${i.unit?' / '+escapeHTML(i.unit):''}${i.old_price?'<br><small>Old: '+escapeHTML(i.old_price)+'</small>':''}`;}
+function infoLine(i){return [i.description,i.offer,i.item_code,i.phone&&('Tel: '+i.phone)].filter(Boolean).map(escapeHTML).join('<br>');}
+function renderTemplateEditor(){const wrap=$('templateEditor'); wrap.innerHTML=Object.entries(templates).map(([cat,t])=>`<div style="margin-bottom:12px"><label>Category: ${escapeHTML(cat)}</label><div class="template-row"><input value="${escapeHTML(cat)}" onchange="renameTemplate('${cat}',this.value)"/><input type="color" value="${t.bg}" onchange="templates['${cat}'].bg=this.value" title="Background"/><input type="color" value="${t.price}" onchange="templates['${cat}'].price=this.value" title="Price box"/><input type="color" value="${t.accent||'#6b7280'}" onchange="templates['${cat}'].accent=this.value" title="Accent"/></div></div>`).join('');}
+function renameTemplate(oldName,newName){newName=newName.trim().toLowerCase(); if(!newName||oldName===newName)return; templates[newName]=templates[oldName]; delete templates[oldName]; renderTemplateEditor();}
+function addTemplate(){const name=prompt('Category name? Example: perfume'); if(!name)return; templates[name.trim().toLowerCase()]={bg:'#ffffff',price:'#2563eb',text:'#111827',accent:'#6b7280'}; renderTemplateEditor();}
+function drawPoster(item){const size=Number($('size').value), canvas=document.createElement('canvas'); canvas.width=size; canvas.height=size; const ctx=canvas.getContext('2d'); const tpl=templates[(item.category||'').toLowerCase()]||templates.default; const currency=$('currency').value.trim(); const img=photos.get(item.photo_filename);
+ ctx.fillStyle=tpl.bg; ctx.fillRect(0,0,size,size); ctx.fillStyle='rgba(255,255,255,.94)'; roundRect(ctx,size*.055,size*.16,size*.89,size*.58,size*.04,true);
+ if(item.offer){ctx.fillStyle=tpl.accent||tpl.price; roundRect(ctx,size*.07,size*.055,size*.38,size*.075,size*.02,true); ctx.fillStyle='#fff'; ctx.font=`800 ${size*.032}px sans-serif`; ctx.textAlign='center'; ctx.fillText(item.offer.toUpperCase(),size*.26,size*.105);}
+ if(logoImg)drawContain(ctx,logoImg,size*.72,size*.045,size*.2,size*.1);
+ if(img)drawContain(ctx,img,size*.1,size*.205,size*.8,size*.47); else {ctx.fillStyle='#d1d5db'; ctx.font=`${size*.035}px sans-serif`; ctx.textAlign='center'; ctx.fillText('Photo not found: '+item.photo_filename,size/2,size*.44);}
+ ctx.fillStyle=tpl.text||'#111827'; ctx.textAlign='left'; ctx.font=`800 ${size*.05}px sans-serif`; wrapText(ctx,item.item_name,size*.07,size*.79,size*.56,size*.06,2);
+ if(item.brand){ctx.fillStyle=tpl.accent||'#6b7280'; ctx.font=`700 ${size*.026}px sans-serif`; ctx.fillText(String(item.brand).toUpperCase(),size*.07,size*.755);}
+ if(item.description){ctx.fillStyle='rgba(17,24,39,.68)'; ctx.font=`${size*.028}px sans-serif`; wrapText(ctx,item.description,size*.07,size*.91,size*.52,size*.035,2);}
+ ctx.fillStyle=tpl.price; roundRect(ctx,size*.64,size*.765,size*.3,size*.145,size*.035,true); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font=`800 ${size*.044}px sans-serif`; ctx.fillText(`${currency} ${item.price}`,size*.79,size*.825); if(item.unit){ctx.font=`700 ${size*.025}px sans-serif`; ctx.fillText('/ '+item.unit,size*.79,size*.86);} if(item.old_price){ctx.font=`${size*.025}px sans-serif`; ctx.fillText(`Was ${currency} ${item.old_price}`,size*.79,size*.892);}
+ ctx.fillStyle='rgba(17,24,39,.55)'; ctx.font=`${size*.023}px sans-serif`; ctx.textAlign='left'; if(item.item_code)ctx.fillText('Code: '+item.item_code,size*.07,size*.968); ctx.textAlign='right'; ctx.fillText(item.phone?'Tel: '+item.phone:(item.category||'').toUpperCase(),size*.93,size*.968); return canvas;}
+function generatePreview(){generated=items.map((item,idx)=>({item,canvas:drawPoster(item),filename:(safeName(item.item_code)||String(idx+1).padStart(3,'0'))+'-'+safeName(item.item_name)+'.png'})); const preview=$('preview'); preview.innerHTML=''; generated.slice(0,30).forEach(g=>{const div=document.createElement('div'); div.className='thumb'; const img=document.createElement('img'); img.src=g.canvas.toDataURL('image/png'); div.appendChild(img); div.insertAdjacentHTML('beforeend',`<small>${escapeHTML(g.filename)}</small>`); preview.appendChild(div);}); $('genStatus').textContent=`${generated.length} images generated. Preview shows first 30.`;}
+async function downloadZip(){if(!generated.length)generatePreview(); if(!generated.length){alert('Please load items first.');return;} const zip=new JSZip(); for(const g of generated){const blob=await new Promise(resolve=>g.canvas.toBlob(resolve,'image/png')); zip.file(g.filename,blob);} const content=await zip.generateAsync({type:'blob'}); const a=document.createElement('a'); a.href=URL.createObjectURL(content); a.download='generated-product-photos.zip'; a.click(); $('genStatus').textContent='ZIP downloaded.';}
+function drawContain(ctx,img,x,y,w,h){const r=Math.min(w/img.width,h/img.height), nw=img.width*r, nh=img.height*r; ctx.drawImage(img,x+(w-nw)/2,y+(h-nh)/2,nw,nh);}
+function wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines){const words=String(text||'').split(' '); let line='',lines=[]; for(const word of words){const test=line?line+' '+word:word; if(ctx.measureText(test).width>maxWidth&&line){lines.push(line); line=word;} else line=test;} lines.push(line); lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));}
+function roundRect(ctx,x,y,w,h,r,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();if(fill)ctx.fill();}
+function safeName(name){return String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'product';}
+function escapeHTML(s){return String(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+renderTemplateEditor();
+</script>
+</body>
+</html>
