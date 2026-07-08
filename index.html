@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Bulk Product Photo Generator</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -10,37 +10,17 @@
 <body>
   <header class="topbar">
     <div>
-      <h1>Bulk Product Photo Generator</h1>
-      <p>Create branded product posts from item lists and photos.</p>
+      <h1>Product Poster Studio</h1>
+      <p>Phone-friendly product poster generator with portrait templates.</p>
     </div>
-    <button id="downloadSample" class="ghost">Download sample CSV</button>
+    <button id="downloadSample" class="ghost">Sample CSV</button>
   </header>
 
   <main class="app-shell">
-    <aside class="panel">
+    <section class="panel">
       <section class="card">
-        <h2>1. Import Items</h2>
-        <p class="hint">CSV columns: item_name, price, category, photo_filename, description, unit, old_price, offer, item_code, phone, brand</p>
-        <label class="upload-box">
-          <input id="csvInput" type="file" accept=".csv,text/csv" />
-          <span>Choose CSV file</span>
-        </label>
-        <div id="csvStatus" class="status muted">No CSV imported.</div>
-      </section>
-
-      <section class="card">
-        <h2>2. Product Photos</h2>
-        <p class="hint">Upload one product photo for each item. Filename must match photo_filename in CSV.</p>
-        <label class="upload-box">
-          <input id="photoInput" type="file" accept="image/*" multiple />
-          <span>Choose product photos</span>
-        </label>
-        <div id="photoStatus" class="status muted">No photos uploaded.</div>
-      </section>
-
-      <section class="card">
-        <h2>3. Brand Logo</h2>
-        <label class="upload-box">
+        <h2>Brand</h2>
+        <label class="upload-box compact">
           <input id="logoInput" type="file" accept="image/*" />
           <span>Choose logo</span>
         </label>
@@ -48,13 +28,13 @@
       </section>
 
       <section class="card">
-        <h2>4. Output</h2>
+        <h2>Output</h2>
         <div class="grid2">
           <label>Size
             <select id="sizeSelect">
-              <option value="1080x1080">Instagram Post 1080×1080</option>
+              <option value="1080x1350" selected>Portrait Post 1080×1350</option>
               <option value="1080x1920">Story 1080×1920</option>
-              <option value="1200x628">Facebook 1200×628</option>
+              <option value="1080x1080">Square 1080×1080</option>
             </select>
           </label>
           <label>Currency
@@ -62,49 +42,47 @@
           </label>
         </div>
         <button id="generateBtn" class="primary" disabled>Generate ZIP</button>
-        <button id="previewBtn" class="secondary" disabled>Preview Selected</button>
-        <div id="generateStatus" class="status muted">Import items and photos first.</div>
+        <div id="generateStatus" class="status muted">Add item and choose photo.</div>
       </section>
-    </aside>
+
+      <section class="card optional-card">
+        <h2>Optional Bulk Import</h2>
+        <p class="hint">You can still import CSV, then choose/edit each photo from phone gallery.</p>
+        <label class="upload-box compact">
+          <input id="csvInput" type="file" accept=".csv,text/csv" />
+          <span>Import CSV</span>
+        </label>
+        <div id="csvStatus" class="status muted">CSV is optional.</div>
+      </section>
+    </section>
 
     <section class="workspace">
       <div class="toolbar card">
         <div>
           <h2>Items</h2>
-          <p id="summaryText" class="hint">Waiting for data.</p>
+          <p id="summaryText" class="hint">Add your first product.</p>
         </div>
-        <label class="search">Search
-          <input id="searchInput" placeholder="Name, category, code..." />
-        </label>
+        <div class="toolbar-actions">
+          <button id="addItemBtn" class="primary small-btn">+ Add Item</button>
+          <button id="duplicateBtn" class="secondary small-btn" disabled>Duplicate</button>
+        </div>
       </div>
 
       <div class="content-grid">
-        <div class="card table-card">
-          <table>
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Item</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Photo</th>
-              </tr>
-            </thead>
-            <tbody id="itemsTable"></tbody>
-          </table>
+        <div class="card editor-card">
+          <div id="itemCards" class="item-cards"></div>
         </div>
         <div class="card preview-card">
-          <h2>Preview</h2>
-          <canvas id="previewCanvas" width="1080" height="1080"></canvas>
-          <p class="hint">Click any item row, then press Preview Selected.</p>
+          <div class="preview-head">
+            <h2>Live Preview</h2>
+            <button id="downloadOneBtn" class="ghost small-btn" disabled>Download PNG</button>
+          </div>
+          <canvas id="previewCanvas" width="1080" height="1350"></canvas>
+          <p class="hint">On phone: add item, type price/info, tap “Choose photo”, then generate.</p>
         </div>
       </div>
     </section>
   </main>
-
-  <template id="emptyRowTemplate">
-    <tr><td colspan="5" class="empty">No items imported yet.</td></tr>
-  </template>
 
   <script src="app.js"></script>
 </body>
