@@ -3,11 +3,11 @@ const $ = id => document.getElementById(id);
 const BODY_FONT = 'Manrope, Inter, Arial, sans-serif';
 const DISPLAY_FONT = 'Plus Jakarta Sans, Manrope, Arial, sans-serif';
 const templates = {
-  electronics:{bg:['#07111f','#0f4fd6'],accent:'#38d5ff',dark:'#07111f',name:'Electronics',soft:'#e0f2fe'},
-  food:{bg:['#06351f','#16a34a'],accent:'#facc15',dark:'#052e1d',name:'Food',soft:'#ecfccb'},
-  hardware:{bg:['#1f2937','#dc2626'],accent:'#fbbf24',dark:'#111827',name:'Hardware',soft:'#fee2e2'},
-  fashion:{bg:['#3b0764','#db2777'],accent:'#f9a8d4',dark:'#1f0a2e',name:'Fashion',soft:'#fce7f3'},
-  default:{bg:['#0f172a','#334155'],accent:'#38bdf8',dark:'#07111f',name:'Default',soft:'#e2e8f0'}
+  electronics:{bg:['#07145c','#0099ff'],accent:'#ffd21f',dark:'#06113a',name:'Electronics',soft:'#e0f2fe'},
+  food:{bg:['#052e1d','#16a34a'],accent:'#ffd21f',dark:'#052e1d',name:'Food',soft:'#ecfccb'},
+  hardware:{bg:['#111827','#dc2626'],accent:'#ffd21f',dark:'#111827',name:'Hardware',soft:'#fee2e2'},
+  fashion:{bg:['#3b0764','#db2777'],accent:'#ffd21f',dark:'#1f0a2e',name:'Fashion',soft:'#fce7f3'},
+  default:{bg:['#07145c','#0099ff'],accent:'#ffd21f',dark:'#06113a',name:'Default',soft:'#e2e8f0'}
 };
 function uid(){ return 'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function blankItem(){ return {id:uid(), item_name:'', price:'', category:'default', description:'', unit:'', old_price:'', offer:'', item_code:'', phone:'', brand:'', photoUrl:null, photoName:''}; }
@@ -55,7 +55,7 @@ function renderItems(reset=true){
         <label>Unit<input data-id="${it.id}" data-k="unit" value="${escapeHtml(it.unit)}" placeholder="kg / pc"></label>
         <label>Category<select data-id="${it.id}" data-k="category">${Object.keys(templates).map(k=>`<option value="${k}" ${it.category===k?'selected':''}>${templates[k].name}</option>`).join('')}</select></label>
         <label>Old price<input data-id="${it.id}" data-k="old_price" value="${escapeHtml(it.old_price)}" placeholder="150"></label>
-        <label>Offer text<input data-id="${it.id}" data-k="offer" value="${escapeHtml(it.offer)}" placeholder="NEW / OFFER"></label>
+        <label>Offer text<input data-id="${it.id}" data-k="offer" value="${escapeHtml(it.offer)}" placeholder="BIG SALE"></label>
         <label>Item code<input data-id="${it.id}" data-k="item_code" value="${escapeHtml(it.item_code)}" placeholder="EL-001"></label>
         <label>Phone<input data-id="${it.id}" data-k="phone" value="${escapeHtml(it.phone)}" placeholder="9485333"></label>
         <label class="full">Description<textarea data-id="${it.id}" data-k="description" placeholder="Short product details">${escapeHtml(it.description)}</textarea></label>
@@ -75,68 +75,64 @@ function fitContain(ctx,img,x,y,w,h,pad=0){ x+=pad;y+=pad;w-=pad*2;h-=pad*2; con
 function wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines){ const words=String(text||'').split(/\s+/).filter(Boolean); let line='', lines=[]; for(const word of words){ const t=line?line+' '+word:word; if(ctx.measureText(t).width>maxWidth&&line){lines.push(line);line=word}else line=t } if(line)lines.push(line); lines=lines.slice(0,maxLines); lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight)); return y+lines.length*lineHeight; }
 function fontFit(ctx,text,maxWidth,start,min,weight='900',family=DISPLAY_FONT){ let size=start; do{ctx.font=`${weight} ${Math.round(size)}px ${family}`; if(ctx.measureText(text).width<=maxWidth)break; size-=2;}while(size>=min); return size; }
 function line(ctx,x1,y1,x2,y2,color,width){ ctx.strokeStyle=color; ctx.lineWidth=width; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
-function drawSoftPattern(ctx,w,h,t){
-  ctx.globalAlpha=.13; ctx.fillStyle='#fff';
-  for(let i=0;i<9;i++){ ctx.beginPath(); ctx.arc(w*(.12+i*.11),h*.12,w*.006,0,Math.PI*2); ctx.fill(); }
-  ctx.globalAlpha=.12; ctx.strokeStyle='#fff'; ctx.lineWidth=w*.002;
-  ctx.beginPath(); ctx.arc(w*.96,h*.10,w*.25,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(-w*.03,h*.88,w*.38,0,Math.PI*2); ctx.stroke();
-  ctx.globalAlpha=1;
+function drawSaleRibbon(ctx,w,h,it){
+  const label=(it.offer||'BIG SALE').toUpperCase();
+  ctx.save(); ctx.translate(w*.075,h*.12); ctx.rotate(-0.07);
+  ctx.shadowColor='rgba(0,0,0,.28)'; ctx.shadowBlur=w*.018; ctx.shadowOffsetY=h*.007;
+  ctx.fillStyle='#ffd21f'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w*.265,-h*.02); ctx.lineTo(w*.245,h*.095); ctx.lineTo(w*.02,h*.112); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#06113a'; fontFit(ctx,label.split(' ')[0]||'BIG',w*.20,w*.062,w*.034,'900',DISPLAY_FONT); ctx.fillText(label.split(' ')[0]||'BIG',w*.038,h*.073);
+  ctx.fillStyle='#e21d18'; ctx.beginPath(); ctx.moveTo(0,h*.098); ctx.lineTo(w*.395,h*.055); ctx.lineTo(w*.378,h*.185); ctx.lineTo(w*.02,h*.222); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#fff'; fontFit(ctx,label.includes('SALE')?'SALE':label,w*.33,w*.083,w*.046,'900',DISPLAY_FONT); ctx.fillText(label.includes('SALE')?'SALE':label,w*.038,h*.168);
+  ctx.restore();
+}
+function drawBackground(ctx,w,h,t){
+  const g=ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,t.bg[0]); g.addColorStop(.5,t.bg[1]); g.addColorStop(1,t.dark); ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<90;i++){ const x=w*(.18+(i%12)*.035), y=h*(.035+Math.floor(i/12)*.014); ctx.beginPath(); ctx.arc(x,y,w*.0035,0,Math.PI*2); ctx.fill(); }
+  ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=w*.002; ctx.beginPath(); ctx.arc(w*.81,h*.28,w*.36,Math.PI*1.05,Math.PI*1.92); ctx.stroke();
+  ctx.fillStyle='#ffd21f'; ctx.beginPath(); ctx.ellipse(w*.78,h*.345,w*.34,h*.255,-.08,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.16)'; ctx.beginPath(); ctx.arc(w*.34,h*.58,w*.09,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(w*.38,h*.58,w*.05,0,Math.PI*2); ctx.fill();
 }
 function drawPrice(ctx,it,t,w,h){
-  const currency=($('currencyInput').value.trim()||'MVR').toUpperCase();
-  const amount=String(it.price||'0').trim();
-  const unit=it.unit?`/${it.unit}`:'';
-  const x=w*.08, y=h*.655, bw=w*.84, bh=h*.142;
-  ctx.shadowColor='rgba(2,6,23,.25)'; ctx.shadowBlur=w*.028; ctx.shadowOffsetY=h*.012;
-  fillRound(ctx,x,y,bw,bh,w*.035,'rgba(255,255,255,.97)');
+  const currency=($('currencyInput').value.trim()||'MVR').toUpperCase(); const amount=String(it.price||'0').trim(); const unit=it.unit?`/${it.unit}`:'';
+  const x=w*.07,y=h*.585,bw=w*.36,bh=h*.25;
+  ctx.shadowColor='rgba(0,0,0,.32)'; ctx.shadowBlur=w*.025; ctx.shadowOffsetY=h*.01;
+  fillRound(ctx,x,y,bw,bh,w*.035,'#ffffff');
   ctx.shadowColor='transparent';
-  fillRound(ctx,x+w*.022,y+h*.022,w*.19,bh-h*.044,w*.026,t.dark);
-  ctx.fillStyle='#ffffff'; ctx.font=`800 ${Math.round(w*.029)}px ${BODY_FONT}`; ctx.textAlign='center'; ctx.fillText('PRICE',x+w*.117,y+h*.052);
-  ctx.fillStyle=t.accent; ctx.font=`900 ${Math.round(w*.036)}px ${DISPLAY_FONT}`; ctx.fillText(currency,x+w*.117,y+h*.101);
-  ctx.textAlign='left';
-  ctx.fillStyle='#020617'; fontFit(ctx,amount,bw*.48,w*.088,w*.052,'900',DISPLAY_FONT); ctx.fillText(amount,x+w*.255,y+h*.098);
-  if(unit){ ctx.font=`800 ${Math.round(w*.029)}px ${BODY_FONT}`; ctx.fillStyle='#64748b'; ctx.fillText(unit,x+w*.58,y+h*.098); }
+  fillRound(ctx,x+w*.012,y+h*.012,bw-w*.024,bh*.72,w*.027,'#e11d1d');
+  ctx.strokeStyle='rgba(255,255,255,.40)'; ctx.lineWidth=w*.002; ctx.setLineDash([w*.008,w*.006]); roundRect(ctx,x+w*.025,y+h*.025,bw-w*.05,bh*.72-h*.05,w*.02); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#fff'; ctx.font=`900 ${Math.round(w*.032)}px ${BODY_FONT}`; ctx.fillText('PRICE',x+w*.04,y+h*.055);
+  ctx.fillStyle='#ffd21f'; ctx.font=`900 ${Math.round(w*.045)}px ${DISPLAY_FONT}`; ctx.fillText(currency,x+w*.04,y+h*.105);
+  ctx.fillStyle='#fff'; fontFit(ctx,amount,bw-w*.07,w*.115,w*.06,'900',DISPLAY_FONT); ctx.fillText(amount,x+w*.04,y+h*.195);
+  if(unit){ ctx.font=`800 ${Math.round(w*.026)}px ${BODY_FONT}`; ctx.fillStyle='rgba(255,255,255,.86)'; ctx.fillText(unit,x+bw*.68,y+h*.195); }
   if(it.old_price){
-    const old=`${currency} ${it.old_price}`;
-    ctx.font=`800 ${Math.round(w*.026)}px ${BODY_FONT}`; ctx.fillStyle='#94a3b8'; ctx.fillText(old,x+w*.66,y+h*.052);
-    const ow=ctx.measureText(old).width; line(ctx,x+w*.66,y+h*.044,x+w*.66+ow,y+h*.044,'#ef4444',Math.max(4,w*.004));
+    const old=`WAS ${currency} ${it.old_price}`; ctx.fillStyle='#374151'; ctx.font=`900 ${Math.round(w*.029)}px ${BODY_FONT}`; ctx.fillText(old,x+w*.045,y+bh*.88); const ow=ctx.measureText(old).width; line(ctx,x+w*.165,y+bh*.865,x+w*.045+ow,y+bh*.865,'#ef4444',Math.max(4,w*.004));
   }
 }
 async function drawItem(it,canvas){
   const [w,h]=$('sizeSelect').value.split('x').map(Number); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d');
-  if(document.fonts?.ready) { try { await document.fonts.ready; } catch(e){} }
+  if(document.fonts?.ready){ try{ await document.fonts.ready; }catch(e){} }
   const t=templates[(it.category||'default').toLowerCase()]||templates.default;
-  const g=ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,t.bg[0]); g.addColorStop(.65,t.bg[1]); g.addColorStop(1,t.dark); ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-  drawSoftPattern(ctx,w,h,t);
-  fillRound(ctx,w*.07,h*.035,w*.23,h*.055,w*.025,'rgba(255,255,255,.12)');
-  if(state.logoUrl){ const logo=await loadImage(state.logoUrl); fitContain(ctx,logo,w*.085,h*.045,w*.19,h*.035); }
-  else { ctx.fillStyle='rgba(255,255,255,.88)'; ctx.font=`800 ${Math.round(w*.024)}px ${BODY_FONT}`; ctx.fillText('YOUR LOGO',w*.102,h*.071); }
-  const offer=(it.offer||'NEW ARRIVAL').toUpperCase();
-  fillRound(ctx,w*.61,h*.04,w*.31,h*.065,w*.032,t.accent); ctx.fillStyle=t.dark; fontFit(ctx,offer,w*.25,w*.031,w*.020,'900',DISPLAY_FONT); ctx.textAlign='center'; ctx.fillText(offer,w*.765,h*.083); ctx.textAlign='left';
-  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.font=`800 ${Math.round(w*.030)}px ${BODY_FONT}`; ctx.fillText('PRODUCT SALE',w*.08,h*.145);
-  ctx.fillStyle='rgba(255,255,255,.58)'; ctx.font=`700 ${Math.round(w*.020)}px ${BODY_FONT}`; ctx.fillText('LIMITED OFFER • BEST PRICE',w*.08,h*.176);
+  drawBackground(ctx,w,h,t);
+  if(state.logoUrl){ const logo=await loadImage(state.logoUrl); fitContain(ctx,logo,w*.075,h*.04,w*.19,h*.06); }
+  else { ctx.fillStyle='rgba(255,255,255,.92)'; ctx.font=`900 ${Math.round(w*.026)}px ${BODY_FONT}`; ctx.fillText('YOUR LOGO',w*.075,h*.075); }
+  drawSaleRibbon(ctx,w,h,it);
   if(it.photoUrl){
-    const img=await loadImage(it.photoUrl); const px=w*.08,py=h*.205,pw=w*.84,ph=h*.405;
-    ctx.shadowColor='rgba(2,6,23,.32)'; ctx.shadowBlur=w*.035; ctx.shadowOffsetY=h*.015;
-    fillRound(ctx,px,py,pw,ph,w*.045,'rgba(255,255,255,.96)');
+    const img=await loadImage(it.photoUrl);
+    ctx.shadowColor='rgba(0,0,0,.34)'; ctx.shadowBlur=w*.035; ctx.shadowOffsetY=h*.018;
+    fitContain(ctx,img,w*.40,h*.13,w*.56,h*.48,w*.005);
     ctx.shadowColor='transparent';
-    fillRound(ctx,px+w*.018,py+h*.018,pw-w*.036,ph-h*.036,w*.036,'#f8fafc');
-    fitContain(ctx,img,px+w*.018,py+h*.018,pw-w*.036,ph-h*.036,w*.018);
   }
   drawPrice(ctx,it,t,w,h);
   const title=it.item_name||'Product Name';
-  ctx.fillStyle='#ffffff'; fontFit(ctx,title,w*.84,w*.060,w*.038,'900',DISPLAY_FONT); let y=wrapText(ctx,title,w*.08,h*.852,w*.84,Math.round(w*.062),2);
-  const desc=it.description||it.brand||'High quality product, ready for order.';
-  ctx.fillStyle='rgba(255,255,255,.78)'; ctx.font=`650 ${Math.round(w*.027)}px ${BODY_FONT}`; y=wrapText(ctx,desc,w*.08,y+8,w*.76,Math.round(w*.038),2);
-  fillRound(ctx,w*.08,h*.944,w*.28,h*.045,w*.022,'rgba(255,255,255,.12)');
-  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.font=`900 ${Math.round(w*.020)}px ${BODY_FONT}`; ctx.textAlign='center'; ctx.fillText('SHOP NOW',w*.22,h*.974); ctx.textAlign='left';
-  ctx.fillStyle='rgba(255,255,255,.82)'; ctx.font=`800 ${Math.round(w*.021)}px ${BODY_FONT}`; ctx.fillText(`${it.item_code?it.item_code+'  •  ':''}${it.phone||''}`,w*.40,h*.973);
+  ctx.fillStyle='#ffffff'; fontFit(ctx,title,w*.50,w*.064,w*.038,'900',DISPLAY_FONT); let y=wrapText(ctx,title,w*.46,h*.745,w*.48,Math.round(w*.064),2);
+  const desc=it.description||it.brand||'';
+  if(desc){ ctx.fillStyle='rgba(255,255,255,.84)'; ctx.font=`700 ${Math.round(w*.029)}px ${BODY_FONT}`; y=wrapText(ctx,desc,w*.46,y+6,w*.45,Math.round(w*.040),2); }
+  ctx.fillStyle='rgba(255,255,255,.88)'; ctx.font=`850 ${Math.round(w*.023)}px ${BODY_FONT}`; ctx.fillText(`${it.item_code?it.item_code+'  •  ':''}${it.phone||''}`,w*.075,h*.955);
 }
 async function previewSelected(){ const it=state.items[state.selected]; const c=$('previewCanvas'); if(!it){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); updateSummary(); return; } await drawItem(it,c); updateSummary(); }
 function downloadBlob(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
 $('addItemBtn').onclick=()=>addItem(); $('duplicateBtn').onclick=duplicateSelected;
-$('downloadSample').onclick=()=>{ const headers=['item_name','price','category','description','unit','old_price','offer','item_code','phone','brand']; const rows=[['Fresh Tuna','80','food','Maldives local fresh tuna','kg','','FRESH','FD-001','9485333','Local Tuna']]; downloadBlob(new Blob([[headers,...rows].map(r=>r.map(csvEscape).join(',')).join('\n')],{type:'text/csv'}),'sample-items.csv'); };
+$('downloadSample').onclick=()=>{ const headers=['item_name','price','category','description','unit','old_price','offer','item_code','phone','brand']; const rows=[['Fresh Tuna','80','food','Maldives local fresh tuna','kg','','BIG SALE','FD-001','9485333','Local Tuna']]; downloadBlob(new Blob([[headers,...rows].map(r=>r.map(csvEscape).join(',')).join('\n')],{type:'text/csv'}),'sample-items.csv'); };
 $('csvInput').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; const rows=parseCSV(await f.text()); state.items.push(...rows); state.selected=Math.max(0,state.items.length-rows.length); setStatus('csvStatus',`${rows.length} items imported. Now choose each photo.`,rows.length?'good':'bad'); renderItems(); previewSelected(); };
 $('logoInput').onchange=e=>{ const f=e.target.files[0]; if(!f)return; if(state.logoUrl)URL.revokeObjectURL(state.logoUrl); state.logoUrl=URL.createObjectURL(f); setStatus('logoStatus',`Logo loaded: ${f.name}`,'good'); previewSelected(); };
 $('sizeSelect').onchange=previewSelected; $('currencyInput').oninput=previewSelected;
