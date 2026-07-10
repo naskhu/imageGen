@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <title>Naskhu Shop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">ONLINE STORE</p>
+      <h1>Naskhu Shop</h1>
+      <p class="subtitle">Quality products delivered across Maldives.</p>
+    </div>
+    <button id="cartButton" class="cart-button" type="button" aria-label="Open shopping cart">
+      Cart <span id="cartCount">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <h2>Simple shopping. Easy WhatsApp ordering.</h2>
+        <p>Add items to your cart, enter delivery details and send the completed order through WhatsApp.</p>
+      </div>
+      <div class="trust-row">
+        <span>✓ Cash on delivery</span>
+        <span>✓ Bank transfer</span>
+        <span>✓ WhatsApp support</span>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Product filters">
+      <input id="searchInput" type="search" placeholder="Search products..." aria-label="Search products">
+      <select id="categoryFilter" aria-label="Filter by category">
+        <option value="all">All categories</option>
+      </select>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CATALOGUE</p>
+          <h2>Products</h2>
+        </div>
+        <p id="productCount"></p>
+      </div>
+      <div id="productGrid" class="product-grid"></div>
+    </section>
+  </main>
+
+  <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
+    <div class="drawer-backdrop" data-close-cart></div>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+      <div class="drawer-header">
+        <div>
+          <p class="eyebrow">YOUR ORDER</p>
+          <h2 id="cartTitle">Shopping cart</h2>
+        </div>
+        <button class="icon-button" data-close-cart type="button" aria-label="Close cart">×</button>
+      </div>
+
+      <div id="cartItems" class="cart-items"></div>
+
+      <div class="order-form">
+        <label>Full name<input id="customerName" type="text" autocomplete="name" placeholder="Your name"></label>
+        <label>Phone number<input id="customerPhone" type="tel" autocomplete="tel" placeholder="7XXXXXX"></label>
+        <label>Delivery address<textarea id="customerAddress" rows="3" placeholder="Island, street, house or apartment"></textarea></label>
+        <label>Payment method
+          <select id="paymentMethod">
+            <option value="Cash on delivery">Cash on delivery</option>
+            <option value="Bank transfer">Bank transfer</option>
+          </select>
+        </label>
+        <label>Order note<textarea id="orderNote" rows="2" placeholder="Optional instructions"></textarea></label>
+      </div>
+
+      <div class="cart-summary">
+        <div><span>Subtotal</span><strong id="subtotal">MVR 0</strong></div>
+        <div><span>Delivery</span><strong>Confirm on WhatsApp</strong></div>
+        <div class="total-row"><span>Total</span><strong id="total">MVR 0</strong></div>
+      </div>
+
+      <button id="checkoutButton" class="checkout-button" type="button">Order on WhatsApp</button>
+      <p class="checkout-note">Your order is only confirmed after the shop replies on WhatsApp.</p>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
